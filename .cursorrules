@@ -1,0 +1,59 @@
+# Cursor Rules for WRO Project
+# Auto-GitHub Upload Configuration
+
+## Automatic GitHub Upload Rule
+**CRITICAL**: For every code change, modification, or run, you MUST automatically upload changes to GitHub using the following workflow:
+
+1. **Always check git status first**: `git status`
+2. **Stage all changes**: `git add .`
+3. **Commit with descriptive message**: `git commit -m "Auto-commit: [describe the change]"`
+4. **Push to GitHub**: `git push origin main`
+
+## Required Workflow for Every Session
+Before completing any task or making any changes:
+
+```bash
+# Check current status
+git status
+
+# Add all changes
+git add .
+
+# Commit with timestamp and description
+git commit -m "Auto-commit $(date): [brief description of changes]"
+
+# Push to GitHub
+git push origin main
+```
+
+## Commit Message Guidelines
+- Use descriptive commit messages
+- Include timestamp when possible
+- Describe what was changed or added
+- Examples:
+  - "Auto-commit: Updated ESP32 configuration"
+  - "Auto-commit: Added new board support"
+  - "Auto-commit: Fixed audio codec issues"
+  - "Auto-commit: Updated documentation"
+
+## Error Handling
+If push fails:
+1. Check authentication: `git remote -v`
+2. Pull latest changes: `git pull origin main`
+3. Resolve conflicts if any
+4. Retry push: `git push origin main`
+
+## Project Context
+- Repository: https://github.com/ybro2011/WRO.git
+- Main branch: main
+- Project: xiaozhi-esp32 ESP32 firmware project
+- Auto-upload is MANDATORY for all changes
+
+## Additional Rules
+- Never leave changes uncommitted
+- Always verify upload success
+- Maintain clean git history
+- Use meaningful commit messages
+- Test changes before committing when possible
+
+**REMINDER**: This rule applies to ALL interactions - every code change, file modification, or project update MUST be automatically uploaded to GitHub before completing the task.
