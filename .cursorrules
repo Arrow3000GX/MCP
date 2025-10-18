@@ -49,11 +49,30 @@ If push fails:
 - Project: xiaozhi-esp32 ESP32 firmware project
 - Auto-upload is MANDATORY for all changes
 
+## Development Log Rule
+**CRITICAL**: For every major change, you MUST update the development log:
+
+1. **Update DEVELOPMENT_LOG.md** with:
+   - Date of change
+   - What was changed
+   - Why the change was made
+   - Files affected
+   - Technical impact
+   - Lessons learned
+
+2. **Include in every major change**:
+   - New features or tools
+   - Bug fixes that resolve significant issues
+   - Configuration changes
+   - New dependencies
+   - Architecture decisions
+
 ## Additional Rules
 - Never leave changes uncommitted
 - Always verify upload success
 - Maintain clean git history
 - Use meaningful commit messages
 - Test changes before committing when possible
+- Update development log for all major changes
 
-**REMINDER**: This rule applies to ALL interactions - every code change, file modification, or project update MUST be automatically uploaded to GitHub before completing the task.
+**REMINDER**: This rule applies to ALL interactions - every code change, file modification, or project update MUST be automatically uploaded to GitHub AND documented in the development log before completing the task.
