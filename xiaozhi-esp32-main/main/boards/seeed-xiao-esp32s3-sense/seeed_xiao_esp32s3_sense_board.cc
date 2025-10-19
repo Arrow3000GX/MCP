@@ -1,5 +1,5 @@
 #include "wifi_board.h"
-#include "codecs/es8311_audio_codec.h"
+#include "codecs/no_audio_codec.h"
 #include "display/lcd_display.h"
 #include "application.h"
 #include "button.h"
@@ -208,7 +208,7 @@ private:
                 int r = args["r"];
                 int g = args["g"];
                 int b = args["b"];
-                rgb_led_->SetColor(r, g, b);
+                rgb_led_->SetColor(r, g, b);    
                 return {{"success", true}, {"color", {{"r", r}, {"g", g}, {"b", b}}}};
             });
         }
@@ -242,7 +242,7 @@ public:
     SeeedXiaoEsp32s3SenseBoard() : boot_button_(BOOT_BUTTON_GPIO) {
         ESP_LOGI(TAG, "Initializing Seeed XIAO ESP32S3 Sense Board");
         
-        InitializeI2c();
+        // InitializeI2c(); // Disabled - using NoAudioCodec instead of ES8311
         InitializeSpi();
         InitializeDisplay();
         InitializeCamera();
@@ -259,20 +259,9 @@ public:
         ESP_LOGI(TAG, "Board initialization completed");
     }
 
-    // 获取音频编解码器
+    // 获取音频编解码器 (暂时使用NoAudioCodec避免初始化问题)
     virtual AudioCodec* GetAudioCodec() override {
-        static Es8311AudioCodec audio_codec(
-            codec_i2c_bus_, 
-            I2C_NUM_0, 
-            AUDIO_INPUT_SAMPLE_RATE, 
-            AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_GPIO_MCLK, 
-            AUDIO_I2S_GPIO_BCLK, 
-            AUDIO_I2S_GPIO_WS, 
-            AUDIO_I2S_GPIO_DOUT, 
-            AUDIO_I2S_GPIO_DIN,
-            AUDIO_CODEC_PA_PIN, 
-            AUDIO_CODEC_ES8311_ADDR);
+        static NoAudioCodec audio_codec;
         return &audio_codec;
     }
 

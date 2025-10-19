@@ -15,8 +15,8 @@
 #define AUDIO_I2S_GPIO_MCLK GPIO_NUM_0   // MCLK (Master Clock) - 通常不需要
 #define AUDIO_I2S_GPIO_WS   GPIO_NUM_4   // LRC (Left/Right Clock) - WS引脚
 #define AUDIO_I2S_GPIO_BCLK GPIO_NUM_5   // BCLK (Bit Clock) - BCLK引脚
-#define AUDIO_I2S_GPIO_DIN  GPIO_NUM_6   // DIN (Data In) - 麦克风数据输入
-#define AUDIO_I2S_GPIO_DOUT GPIO_NUM_6   // DOUT (Data Out) - 扬声器数据输出 (与DIN共用)
+#define AUDIO_I2S_GPIO_DIN  GPIO_NUM_NC  // DIN (Data In) - 麦克风数据输入 (使用内置麦克风)
+#define AUDIO_I2S_GPIO_DOUT GPIO_NUM_6   // DOUT (Data Out) - 扬声器数据输出
 
 // 音频编解码器配置 (XIAO ESP32S3 Sense 内置)
 #define AUDIO_CODEC_PA_PIN       GPIO_NUM_NC  // MAX98357A不需要PA控制引脚
