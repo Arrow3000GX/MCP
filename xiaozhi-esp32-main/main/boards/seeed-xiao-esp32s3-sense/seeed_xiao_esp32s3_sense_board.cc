@@ -28,9 +28,8 @@ private:
             app.ToggleChatState();
         });
 
-        // Initialize boot button
+        // Boot button is initialized in constructor
         if (BOOT_BUTTON_GPIO != GPIO_NUM_NC) {
-            boot_button_.Init();
             ESP_LOGI(TAG, "Boot button initialized on GPIO %d", BOOT_BUTTON_GPIO);
         }
     }
@@ -39,10 +38,12 @@ public:
     // Constructor
     SeeedXiaoEsp32s3SenseBoard() : boot_button_(BOOT_BUTTON_GPIO) {
         ESP_LOGI(TAG, "Initializing Seeed XIAO ESP32S3 Sense Board");
+        ESP_LOGI(TAG, "Debug: Constructor started");
         
         // Initialize buttons
         InitializeButtons();
         
+        ESP_LOGI(TAG, "Debug: Buttons initialized");
         ESP_LOGI(TAG, "Board initialization complete");
     }
 
@@ -57,13 +58,17 @@ public:
     }
 
     virtual AudioCodec* GetAudioCodec() override {
+        ESP_LOGI(TAG, "Debug: GetAudioCodec called");
         static NoAudioCodecDuplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
             AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
+        ESP_LOGI(TAG, "Debug: AudioCodec created and returned");
         return &audio_codec;
     }
 
     virtual Display* GetDisplay() override {
+        ESP_LOGI(TAG, "Debug: GetDisplay called");
         static NoDisplay display;
+        ESP_LOGI(TAG, "Debug: NoDisplay created and returned");
         return &display;
     }
 };

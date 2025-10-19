@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.16)
+
+# Set the project name
+project(audio_test)
+
+# Set the target chip
+set(IDF_TARGET esp32s3)
+
+# Include the ESP-IDF build system
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+# Set the project
+project(audio_test)
