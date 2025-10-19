@@ -518,6 +518,10 @@ elseif(CONFIG_BOARD_TYPE_WTP4C5MP07S)
     set(BUILTIN_TEXT_FONT font_puhui_basic_30_4)
     set(BUILTIN_ICON_FONT font_awesome_30_4)
     set(DEFAULT_EMOJI_COLLECTION twemoji_64)
+elseif(CONFIG_BOARD_TYPE_SEEED_XIAO_ESP32S3_SENSE)
+    set(BOARD_TYPE "seeed-xiao-esp32s3-sense")
+    set(BUILTIN_TEXT_FONT font_puhui_14_1)
+    set(BUILTIN_ICON_FONT font_awesome_14_1)
 endif()
 
 file(GLOB BOARD_SOURCES

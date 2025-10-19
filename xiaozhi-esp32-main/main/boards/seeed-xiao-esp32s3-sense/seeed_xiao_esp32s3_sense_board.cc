@@ -1,5 +1,7 @@
 #include "wifi_board.h"
 #include "codecs/no_audio_codec.h"
+#include "display/display.h"
+#include "led/led.h"
 #include "application.h"
 #include "button.h"
 #include "config.h"
@@ -46,9 +48,10 @@ public:
         return &audio_codec_;
     }
 
-    // Get display (no display)
+    // Get display (no display - return NoDisplay instance)
     virtual Display* GetDisplay() override {
-        return nullptr;
+        static NoDisplay display;
+        return &display;
     }
     
     // Get backlight (no display)
@@ -59,6 +62,12 @@ public:
     // Get camera (no camera for now)
     virtual Camera* GetCamera() override {
         return nullptr;
+    }
+
+    // Get LED (use NoLed from base class)
+    virtual Led* GetLed() override {
+        static NoLed led;
+        return &led;
     }
 
     // Get RGB LED (no RGB LED for now)
