@@ -36,6 +36,11 @@ public:
         }
     }
 
+    // Override GetBoardType to return our board name
+    virtual std::string GetBoardType() override {
+        return "seeed-xiao-esp32s3-sense";
+    }
+
     // Get audio codec (no external codec)
     virtual AudioCodec* GetAudioCodec() override {
         return &audio_codec_;
@@ -102,7 +107,5 @@ private:
     }
 };
 
-// Board factory function
-extern "C" Board* CreateBoard() {
-    return new SeeedXiaoEsp32s3SenseBoard();
-}
+// CRITICAL: This macro registers the board with the system
+DECLARE_BOARD(SeeedXiaoEsp32s3SenseBoard);
