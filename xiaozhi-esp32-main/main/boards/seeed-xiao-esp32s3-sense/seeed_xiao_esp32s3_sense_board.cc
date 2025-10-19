@@ -244,7 +244,7 @@ public:
         
         // InitializeI2c(); // Disabled - using NoAudioCodec instead of ES8311
         InitializeSpi();
-        InitializeDisplay();
+        // InitializeDisplay(); // Disabled - no display connected
         InitializeCamera();
         InitializeRgbLed();
         InitializeBatteryMonitor();
@@ -265,18 +265,14 @@ public:
         return &audio_codec;
     }
 
-    // 获取显示屏
+    // 获取显示屏 (无显示屏)
     virtual Display* GetDisplay() override {
-        return display_;
+        return nullptr; // No display connected
     }
     
-    // 获取背光控制
+    // 获取背光控制 (无显示屏)
     virtual Backlight* GetBacklight() override {
-        if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
-            static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
-            return &backlight;
-        }
-        return nullptr;
+        return nullptr; // No display, no backlight
     }
 
     // 获取摄像头

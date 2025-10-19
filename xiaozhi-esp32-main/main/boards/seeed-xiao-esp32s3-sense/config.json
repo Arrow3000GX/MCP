@@ -13,7 +13,8 @@
                 "CONFIG_MAX98357A_AMPLIFIER=y",
                 "CONFIG_CAMERA_OV2640=y",
                 "CONFIG_RGB_LED_ENABLE=y",
-                "CONFIG_BATTERY_MONITOR_ENABLE=y"
+                "CONFIG_BATTERY_MONITOR_ENABLE=y",
+                "CONFIG_DISPLAY_TYPE_NONE=y"
             ]
         }
     ]
