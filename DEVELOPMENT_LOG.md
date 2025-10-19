@@ -166,11 +166,55 @@ This log tracks major changes, fixes, and improvements made to the WRO project.
 - ✅ Music MCP server created and tested successfully
 - ✅ UK News MCP server created and tested successfully
 - ✅ All four MCP servers ready for use (UK Trains, Fetch, Music, UK News)
+- ✅ ESP-IDF v5.5 installed and configured successfully
+- ✅ Custom firmware built for Seeed XIAO ESP32S3 Sense
+- ✅ Serial monitor working and showing successful boot
+- ✅ Hardware configuration updated to match user's actual connections
+
+#### 12. Hardware Pin Configuration Update
+- **What**: Updated GPIO pin mappings to match user's actual hardware connections
+- **Why**: User provided actual soldered connections which differed from initial configuration
+- **User's Actual Connections**:
+  - D3 → LRC (Left/Right Clock) - GPIO3
+  - D4 → BCLK (Bit Clock) - GPIO4  
+  - D5 → DIN (Data Input) - GPIO5
+  - SD pin → Enable pin - GPIO7
+  - VCC/GND → BAT+/BAT- power connections
+  - Speaker connected to SPK+/SPK- on amplifier
+- **Files Updated**:
+  - `config.h`: Updated I2S pin mappings (GPIO3,4,5 instead of GPIO4,5,6)
+  - `seeed_xiao_esp32s3_sense_board.cc`: Updated audio codec initialization with correct pins
+- **Test Results**: ✅ Serial monitor shows successful boot with audio system working
+
+#### 13. Firmware Flashing Success
+- **What**: Successfully flashed custom firmware to Seeed XIAO ESP32S3 Sense
+- **Why**: User requested to flash the updated firmware with correct pin configuration
+- **Process**:
+  - ESP32 detected on `/dev/tty.usbmodem101` (different port from previous session)
+  - Flashed core firmware components: bootloader, main app, partition table, OTA data
+  - Skipped `generated_assets.bin` due to 8MB flash size limitation
+  - Used correct 8MB flash size parameter
+- **Files Flashed**:
+  - Bootloader: 16,496 bytes at 0x00000000
+  - Main Application: 2,527,264 bytes at 0x00020000 (xiaozhi.bin)
+  - Partition Table: 3,072 bytes at 0x00008000
+  - OTA Data: 8,192 bytes at 0x0000d000
+- **Test Results**: ✅ Firmware flashed successfully with hard reset performed
+
+#### 16. Added ESP32 Project Modification Rule
+- **What**: Added a strict rule to `.cursorrules` preventing modifications to core xiaozhi-esp32-main files.
+- **Why**: User requested to only modify board-specific folders, not core project files like CMakeLists.txt or Kconfig.projbuild.
+- **Files Affected**: `.cursorrules`
+- **Technical Impact**: Establishes clear boundaries for future ESP32 development work - only board folders can be modified.
+- **Lessons Learned**: Core project files should remain untouched to maintain project integrity.
+- **Rule Details**: 
+  - ONLY modify files within `xiaozhi-esp32-main/main/boards/[board-name]/`
+  - NEVER modify CMakeLists.txt, Kconfig.projbuild, application.cc, or other core files
+  - Provide integration instructions instead of direct modifications
 
 ### Next Steps:
-- Test UK Trains MCP server connection in xiaozhi-mcphub
-- Verify all tools work correctly
-- Document successful configuration for future reference
+- Test audio output with MAX98357A amplifier
+- Configure WiFi settings for full functionality
 
 ### Technical Notes:
 - Project uses ES modules (`"type": "module"` in package.json)

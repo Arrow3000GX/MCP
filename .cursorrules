@@ -67,6 +67,29 @@ If push fails:
    - New dependencies
    - Architecture decisions
 
+## ESP32 Project Modification Rule
+**CRITICAL**: When working with the `xiaozhi-esp32-main` folder:
+
+1. **ONLY modify files within board-specific folders**:
+   - `xiaozhi-esp32-main/main/boards/[board-name]/` - Board-specific configurations
+   - `xiaozhi-esp32-main/main/boards/[board-name]/config.h` - Hardware pin mappings
+   - `xiaozhi-esp32-main/main/boards/[board-name]/config.json` - Build configuration
+   - `xiaozhi-esp32-main/main/boards/[board-name]/[board]_board.cc` - Board implementation
+   - `xiaozhi-esp32-main/main/boards/[board-name]/README.md` - Board documentation
+
+2. **NEVER modify core project files**:
+   - `xiaozhi-esp32-main/main/CMakeLists.txt` - Build system configuration
+   - `xiaozhi-esp32-main/main/Kconfig.projbuild` - Menuconfig options
+   - `xiaozhi-esp32-main/main/application.cc` - Main application code
+   - `xiaozhi-esp32-main/main/application.h` - Main application headers
+   - Any other files outside the `boards/` directory
+
+3. **Board Integration**: If a new board needs to be integrated into the build system:
+   - Create the board folder with all required files
+   - Document the integration requirements
+   - Provide instructions for manual integration by the user
+   - Do NOT modify CMakeLists.txt or Kconfig.projbuild directly
+
 ## Additional Rules
 - Never leave changes uncommitted
 - Always verify upload success
