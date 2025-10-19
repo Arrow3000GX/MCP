@@ -1,12 +1,14 @@
 #include "wifi_board.h"
 #include "codecs/no_audio_codec.h"
 #include "display/display.h"
-#include "led/led.h"
+#include "system_reset.h"
 #include "application.h"
 #include "button.h"
 #include "config.h"
+#include "led/single_led.h"
 #include "assets/lang_config.h"
 
+#include <wifi_station.h>
 #include <esp_log.h>
 
 #define TAG "SeeedXiaoEsp32s3Sense"
@@ -14,23 +16,18 @@
 class SeeedXiaoEsp32s3SenseBoard : public WifiBoard {
 private:
     Button boot_button_;
-    NoAudioCodec audio_codec_;
 
-public:
-    // Constructor
-    SeeedXiaoEsp32s3SenseBoard() : boot_button_(BOOT_BUTTON_GPIO) {
-        ESP_LOGI(TAG, "Initializing Seeed XIAO ESP32S3 Sense Board (Simplified)");
-        
-        // Initialize buttons
-        InitializeButtons();
-        
-        ESP_LOGI(TAG, "Board initialization complete");
-    }
-
-    // Initialize buttons
     void InitializeButtons() {
         ESP_LOGI(TAG, "Initializing buttons");
         
+        boot_button_.OnClick([this]() {
+            auto& app = Application::GetInstance();
+            if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
+                ResetWifiConfiguration();
+            }
+            app.ToggleChatState();
+        });
+
         // Initialize boot button
         if (BOOT_BUTTON_GPIO != GPIO_NUM_NC) {
             boot_button_.Init();
@@ -38,81 +35,36 @@ public:
         }
     }
 
+public:
+    // Constructor
+    SeeedXiaoEsp32s3SenseBoard() : boot_button_(BOOT_BUTTON_GPIO) {
+        ESP_LOGI(TAG, "Initializing Seeed XIAO ESP32S3 Sense Board");
+        
+        // Initialize buttons
+        InitializeButtons();
+        
+        ESP_LOGI(TAG, "Board initialization complete");
+    }
+
     // Override GetBoardType to return our board name
     virtual std::string GetBoardType() override {
         return "seeed-xiao-esp32s3-sense";
     }
 
-    // Get audio codec (no external codec)
-    virtual AudioCodec* GetAudioCodec() override {
-        return &audio_codec_;
-    }
-
-    // Get display (no display - return NoDisplay instance)
-    virtual Display* GetDisplay() override {
-        static NoDisplay display;
-        return &display;
-    }
-    
-    // Get backlight (no display)
-    virtual Backlight* GetBacklight() override {
-        return nullptr;
-    }
-
-    // Get camera (no camera for now)
-    virtual Camera* GetCamera() override {
-        return nullptr;
-    }
-
-    // Get LED (use NoLed from base class)
     virtual Led* GetLed() override {
-        static NoLed led;
+        static SingleLed led(BUILTIN_LED_GPIO);
         return &led;
     }
 
-    // Get RGB LED (no RGB LED for now)
-    virtual RgbLed* GetRgbLed() override {
-        return nullptr;
+    virtual AudioCodec* GetAudioCodec() override {
+        static NoAudioCodecDuplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
+            AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
+        return &audio_codec;
     }
 
-    // Get status LED (no status LED for now)
-    virtual StatusLed* GetStatusLed() override {
-        return nullptr;
-    }
-
-    // Get battery monitor (no battery monitor for now)
-    virtual BatteryMonitor* GetBatteryMonitor() override {
-        return nullptr;
-    }
-
-    // Get buttons
-    virtual Button* GetBootButton() override {
-        return &boot_button_;
-    }
-
-    virtual Button* GetVolumeUpButton() override {
-        return nullptr;
-    }
-
-    virtual Button* GetVolumeDownButton() override {
-        return nullptr;
-    }
-
-    // Initialize MCP tools (minimal set)
-    virtual void InitializeTools() override {
-        ESP_LOGI(TAG, "Initializing MCP tools");
-        
-        // Add basic tools only
-        AddTool("speaker", "Speaker control tool");
-        AddTool("button", "Button control tool");
-        
-        ESP_LOGI(TAG, "MCP tools initialized");
-    }
-
-private:
-    void AddTool(const std::string& name, const std::string& description) {
-        ESP_LOGI(TAG, "Adding MCP tool: %s - %s", name.c_str(), description.c_str());
-        // Tool registration would go here
+    virtual Display* GetDisplay() override {
+        static NoDisplay display;
+        return &display;
     }
 };
 
