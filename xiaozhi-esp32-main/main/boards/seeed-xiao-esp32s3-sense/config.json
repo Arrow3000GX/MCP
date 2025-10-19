@@ -4,17 +4,9 @@
         {
             "name": "seeed-xiao-esp32s3-sense",
             "sdkconfig_append": [
-                "CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y",
-                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/v2/16m.csv\"",
-                "CONFIG_LANGUAGE_EN_US=y",
-                "CONFIG_USE_DEVICE_AEC=y",
-                "CONFIG_AUDIO_INPUT_SAMPLE_RATE_16000=y",
-                "CONFIG_AUDIO_OUTPUT_SAMPLE_RATE_24000=y",
-                "CONFIG_MAX98357A_AMPLIFIER=y",
-                "CONFIG_CAMERA_OV2640=y",
-                "CONFIG_RGB_LED_ENABLE=y",
-                "CONFIG_BATTERY_MONITOR_ENABLE=y",
-                "CONFIG_DISPLAY_TYPE_NONE=y"
+                "CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y",
+                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/v2/8m.csv\"",
+                "CONFIG_LANGUAGE_EN_US=y"
             ]
         }
     ]
