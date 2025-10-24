@@ -6,6 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import fetch from 'node-fetch';
 
 // Audiobook MCP Server
 class AudiobookMCPServer {
@@ -30,6 +31,7 @@ class AudiobookMCPServer {
     this.bookmarks = new Map(); // book title -> array of bookmarks
     this.readingProgress = new Map(); // book title -> progress data
     this.readingLists = new Map(); // list name -> array of books
+    this.audiobookCache = new Map(); // cache for search results
 
     this.setupToolHandlers();
     this.setupErrorHandling();
@@ -269,106 +271,227 @@ class AudiobookMCPServer {
     });
   }
 
+  // Real audiobook integration methods
+  async searchLibriVox(query, limit = 10) {
+    try {
+      const cacheKey = `librivox_${query}_${limit}`;
+      if (this.audiobookCache.has(cacheKey)) {
+        return this.audiobookCache.get(cacheKey);
+      }
+
+      const response = await fetch(`https://librivox.org/api/feed/audiobooks/?search=${encodeURIComponent(query)}&format=json&limit=${limit}`);
+      const data = await response.json();
+      
+      const books = data.books.map(book => ({
+        id: book.id,
+        title: book.title,
+        author: book.authors?.map(author => `${author.first_name} ${author.last_name}`).join(', ') || 'Unknown Author',
+        narrator: book.readers?.map(reader => reader.display_name).join(', ') || 'Unknown Narrator',
+        genre: book.genres?.map(genre => genre.name).join(', ') || 'Unknown Genre',
+        duration: this.parseDuration(book.totaltime),
+        chapters: book.sections?.length || 1,
+        year: book.copyright_year || 'Unknown',
+        description: book.description || 'No description available',
+        language: book.language || 'English',
+        url: book.url_librivox,
+        source: 'LibriVox',
+        cover: book.url_cover_image,
+        sections: book.sections || []
+      }));
+
+      this.audiobookCache.set(cacheKey, books);
+      return books;
+    } catch (error) {
+      console.error('LibriVox search error:', error);
+      return [];
+    }
+  }
+
+  async searchInternetArchive(query, limit = 10) {
+    try {
+      const cacheKey = `archive_${query}_${limit}`;
+      if (this.audiobookCache.has(cacheKey)) {
+        return this.audiobookCache.get(cacheKey);
+      }
+
+      const response = await fetch(`https://archive.org/advancedsearch.php?q=mediatype:audio+AND+collection:librivoxaudio+AND+${encodeURIComponent(query)}&output=json&rows=${limit}`);
+      const data = await response.json();
+      
+      const books = data.response.docs.map(book => ({
+        id: book.identifier,
+        title: book.title,
+        author: book.creator || 'Unknown Author',
+        narrator: book.contributor || 'Unknown Narrator',
+        genre: 'Public Domain',
+        duration: this.parseDuration(book.runtime),
+        chapters: book.files?.filter(file => file.endsWith('.mp3')).length || 1,
+        year: book.date || 'Unknown',
+        description: book.description || 'No description available',
+        language: book.language || 'English',
+        url: `https://archive.org/download/${book.identifier}`,
+        source: 'Internet Archive',
+        cover: book.coverimage || null,
+        sections: book.files?.filter(file => file.endsWith('.mp3')) || []
+      }));
+
+      this.audiobookCache.set(cacheKey, books);
+      return books;
+    } catch (error) {
+      console.error('Internet Archive search error:', error);
+      return [];
+    }
+  }
+
+  async searchOpenLibrary(query, limit = 10) {
+    try {
+      const cacheKey = `openlib_${query}_${limit}`;
+      if (this.audiobookCache.has(cacheKey)) {
+        return this.audiobookCache.get(cacheKey);
+      }
+
+      const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&mediaType=audiobook&limit=${limit}`);
+      const data = await response.json();
+      
+      const books = data.docs.map(book => ({
+        id: book.key,
+        title: book.title,
+        author: book.author_name?.join(', ') || 'Unknown Author',
+        narrator: 'Unknown Narrator',
+        genre: book.subject?.join(', ') || 'Unknown Genre',
+        duration: 0, // Not available in Open Library
+        chapters: 1,
+        year: book.first_publish_year || 'Unknown',
+        description: book.first_sentence?.[0] || 'No description available',
+        language: book.language?.[0] || 'English',
+        url: `https://openlibrary.org${book.key}`,
+        source: 'Open Library',
+        cover: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg` : null,
+        sections: []
+      }));
+
+      this.audiobookCache.set(cacheKey, books);
+      return books;
+    } catch (error) {
+      console.error('Open Library search error:', error);
+      return [];
+    }
+  }
+
+  parseDuration(timeString) {
+    if (!timeString) return 0;
+    
+    // Handle formats like "11:30:45" or "11h 30m 45s"
+    const timeRegex = /(\d+):(\d+):(\d+)/;
+    const match = timeString.match(timeRegex);
+    
+    if (match) {
+      const hours = parseInt(match[1]);
+      const minutes = parseInt(match[2]);
+      const seconds = parseInt(match[3]);
+      return hours * 3600 + minutes * 60 + seconds;
+    }
+    
+    // Handle formats like "11h 30m 45s"
+    const parts = timeString.match(/(\d+)h|(\d+)m|(\d+)s/g);
+    if (parts) {
+      let totalSeconds = 0;
+      parts.forEach(part => {
+        if (part.includes('h')) totalSeconds += parseInt(part) * 3600;
+        else if (part.includes('m')) totalSeconds += parseInt(part) * 60;
+        else if (part.includes('s')) totalSeconds += parseInt(part);
+      });
+      return totalSeconds;
+    }
+    
+    return 0;
+  }
+
+  async searchRealAudiobooks(query, type = 'all', limit = 10) {
+    try {
+      const results = [];
+      
+      // Search multiple sources in parallel
+      const [librivoxResults, archiveResults, openlibResults] = await Promise.all([
+        this.searchLibriVox(query, Math.ceil(limit / 3)),
+        this.searchInternetArchive(query, Math.ceil(limit / 3)),
+        this.searchOpenLibrary(query, Math.ceil(limit / 3))
+      ]);
+
+      // Combine and filter results
+      results.push(...librivoxResults);
+      results.push(...archiveResults);
+      results.push(...openlibResults);
+
+      // Filter by type if specified
+      let filteredResults = results;
+      if (type !== 'all') {
+        const queryLower = query.toLowerCase();
+        filteredResults = results.filter(book => {
+          switch (type) {
+            case 'title':
+              return book.title.toLowerCase().includes(queryLower);
+            case 'author':
+              return book.author.toLowerCase().includes(queryLower);
+            case 'genre':
+              return book.genre.toLowerCase().includes(queryLower);
+            default:
+              return true;
+          }
+        });
+      }
+
+      // Remove duplicates and limit results
+      const uniqueResults = filteredResults.filter((book, index, self) => 
+        index === self.findIndex(b => b.title === book.title && b.author === book.author)
+      );
+
+      return uniqueResults.slice(0, limit);
+    } catch (error) {
+      console.error('Real audiobook search error:', error);
+      return [];
+    }
+  }
+
   async playAudiobook(args) {
     const { query, author, genre } = args;
     
     try {
-      // Mock audiobook database
-      const audiobookDatabase = [
-        {
-          title: '1984',
-          author: 'George Orwell',
-          genre: 'Dystopian Fiction',
-          narrator: 'Simon Prebble',
-          duration: 11 * 3600 + 30 * 60, // 11 hours 30 minutes
-          chapters: 23,
-          year: 1949,
-          description: 'A dystopian social science fiction novel about totalitarian control.',
-          url: 'mock://1984-audiobook.mp3'
-        },
-        {
-          title: 'The Great Gatsby',
-          author: 'F. Scott Fitzgerald',
-          genre: 'Fiction',
-          narrator: 'Jake Gyllenhaal',
-          duration: 4 * 3600 + 49 * 60, // 4 hours 49 minutes
-          chapters: 9,
-          year: 1925,
-          description: 'A story of the fabulously wealthy Jay Gatsby and his love for Daisy Buchanan.',
-          url: 'mock://great-gatsby-audiobook.mp3'
-        },
-        {
-          title: 'To Kill a Mockingbird',
-          author: 'Harper Lee',
-          genre: 'Fiction',
-          narrator: 'Sissy Spacek',
-          duration: 12 * 3600 + 17 * 60, // 12 hours 17 minutes
-          chapters: 31,
-          year: 1960,
-          description: 'A story of racial injustice and childhood innocence.',
-          url: 'mock://to-kill-mockingbird-audiobook.mp3'
-        },
-        {
-          title: 'Dune',
-          author: 'Frank Herbert',
-          genre: 'Science Fiction',
-          narrator: 'Scott Brick',
-          duration: 21 * 3600 + 2 * 60, // 21 hours 2 minutes
-          chapters: 48,
-          year: 1965,
-          description: 'An epic science fiction novel set on the desert planet Arrakis.',
-          url: 'mock://dune-audiobook.mp3'
-        },
-        {
-          title: 'The Martian',
-          author: 'Andy Weir',
-          genre: 'Science Fiction',
-          narrator: 'R.C. Bray',
-          duration: 10 * 3600 + 53 * 60, // 10 hours 53 minutes
-          chapters: 26,
-          year: 2011,
-          description: 'A story of an astronaut stranded on Mars.',
-          url: 'mock://martian-audiobook.mp3'
-        },
-        {
-          title: 'Becoming',
-          author: 'Michelle Obama',
-          genre: 'Biography',
-          narrator: 'Michelle Obama',
-          duration: 19 * 3600 + 3 * 60, // 19 hours 3 minutes
-          chapters: 24,
-          year: 2018,
-          description: 'A memoir by former First Lady Michelle Obama.',
-          url: 'mock://becoming-audiobook.mp3'
-        }
-      ];
-
-      // Search for matching audiobooks
-      let results = audiobookDatabase.filter(book => {
-        const queryLower = query.toLowerCase();
-        const matchesQuery = book.title.toLowerCase().includes(queryLower) ||
-                           book.author.toLowerCase().includes(queryLower) ||
-                           book.description.toLowerCase().includes(queryLower);
-        
-        const matchesAuthor = !author || book.author.toLowerCase().includes(author.toLowerCase());
-        const matchesGenre = !genre || book.genre.toLowerCase().includes(genre.toLowerCase());
-        
-        return matchesQuery && matchesAuthor && matchesGenre;
-      });
-
-      if (results.length === 0) {
+      // Search for real audiobooks
+      const searchQuery = author ? `${query} ${author}` : query;
+      const realBooks = await this.searchRealAudiobooks(searchQuery, 'all', 20);
+      
+      if (realBooks.length === 0) {
         return {
           content: [
             {
               type: 'text',
-              text: `📚 No audiobooks found matching "${query}". Try a different search term.`,
+              text: `📚 No real audiobooks found for "${query}". Try searching for classic literature, public domain books, or specific authors like "Shakespeare", "Jane Austen", or "Mark Twain".`,
+            },
+          ],
+        };
+      }
+
+      // Filter by genre if specified
+      let filteredBooks = realBooks;
+      if (genre) {
+        filteredBooks = realBooks.filter(book => 
+          book.genre.toLowerCase().includes(genre.toLowerCase())
+        );
+      }
+
+      if (filteredBooks.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `📚 No audiobooks found in genre "${genre}" for "${query}". Available genres: ${[...new Set(realBooks.map(b => b.genre))].join(', ')}`,
             },
           ],
         };
       }
 
       // Play the first matching audiobook
-      const book = results[0];
+      const book = filteredBooks[0];
       this.currentBook = book;
       this.currentChapter = 1;
       this.isPlaying = true;
@@ -389,16 +512,23 @@ class AudiobookMCPServer {
       result += `🎭 Narrator: ${book.narrator}\n`;
       result += `📖 Genre: ${book.genre}\n`;
       result += `📅 Year: ${book.year}\n`;
+      result += `🌍 Language: ${book.language}\n`;
       result += `📄 Chapters: ${book.chapters}\n`;
       result += `⏱️ Duration: ${Math.floor(book.duration / 3600)}h ${Math.floor((book.duration % 3600) / 60)}m\n`;
-      result += `📝 Description: ${book.description}\n\n`;
+      result += `📝 Description: ${book.description.substring(0, 200)}${book.description.length > 200 ? '...' : ''}\n`;
+      result += `🔗 Source: ${book.source}\n`;
+      result += `🌐 URL: ${book.url}\n\n`;
       result += `🎧 Chapter: ${this.currentChapter}/${book.chapters}\n`;
       result += `▶️ Playing: ${this.isPlaying ? 'YES' : 'NO'}\n`;
       result += `⚡ Speed: ${this.playbackSpeed}x\n`;
       result += `📍 Position: ${Math.floor(this.currentPosition / 60)}:${(this.currentPosition % 60).toString().padStart(2, '0')}\n\n`;
 
-      if (results.length > 1) {
-        result += `💡 Found ${results.length - 1} more matching audiobooks. Use "search_audiobooks" to see all results.`;
+      if (filteredBooks.length > 1) {
+        result += `💡 Found ${filteredBooks.length - 1} more matching audiobooks. Use "search_audiobooks" to see all results.\n\n`;
+        result += `📚 Other available books:\n`;
+        filteredBooks.slice(1, 4).forEach((book, index) => {
+          result += `${index + 2}. "${book.title}" by ${book.author} (${book.source})\n`;
+        });
       }
 
       return {
@@ -587,54 +717,41 @@ class AudiobookMCPServer {
     const { query, type = 'all', limit = 10 } = args;
     
     try {
-      const audiobookDatabase = [
-        { title: '1984', author: 'George Orwell', genre: 'Dystopian Fiction', narrator: 'Simon Prebble' },
-        { title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', genre: 'Fiction', narrator: 'Jake Gyllenhaal' },
-        { title: 'To Kill a Mockingbird', author: 'Harper Lee', genre: 'Fiction', narrator: 'Sissy Spacek' },
-        { title: 'Dune', author: 'Frank Herbert', genre: 'Science Fiction', narrator: 'Scott Brick' },
-        { title: 'The Martian', author: 'Andy Weir', genre: 'Science Fiction', narrator: 'R.C. Bray' },
-        { title: 'Becoming', author: 'Michelle Obama', genre: 'Biography', narrator: 'Michelle Obama' },
-        { title: 'Sapiens', author: 'Yuval Noah Harari', genre: 'Non-fiction', narrator: 'Derek Perkins' },
-        { title: 'The Silent Patient', author: 'Alex Michaelides', genre: 'Mystery', narrator: 'Jack Hawkins' },
-        { title: 'Educated', author: 'Tara Westover', genre: 'Biography', narrator: 'Julia Whelan' },
-        { title: 'Atomic Habits', author: 'James Clear', genre: 'Self-help', narrator: 'James Clear' }
-      ];
-
-      const queryLower = query.toLowerCase();
-      let results = audiobookDatabase.filter(item => {
-        switch (type) {
-          case 'title':
-            return item.title.toLowerCase().includes(queryLower);
-          case 'author':
-            return item.author.toLowerCase().includes(queryLower);
-          case 'genre':
-            return item.genre.toLowerCase().includes(queryLower);
-          default:
-            return item.title.toLowerCase().includes(queryLower) ||
-                   item.author.toLowerCase().includes(queryLower) ||
-                   item.genre.toLowerCase().includes(queryLower) ||
-                   item.narrator.toLowerCase().includes(queryLower);
-        }
-      }).slice(0, limit);
-
-      if (results.length === 0) {
+      const realBooks = await this.searchRealAudiobooks(query, type, limit);
+      
+      if (realBooks.length === 0) {
         return {
           content: [
             {
               type: 'text',
-              text: `🔍 No audiobooks found for "${query}" in ${type} search.`,
+              text: `🔍 No audiobooks found for "${query}". Try searching for:\n\n• Classic literature: "Shakespeare", "Jane Austen", "Mark Twain"\n• Public domain books: "Pride and Prejudice", "Moby Dick", "Sherlock Holmes"\n• Specific genres: "science fiction", "mystery", "biography"\n• Popular authors: "Charles Dickens", "Edgar Allan Poe", "H.G. Wells"`,
             },
           ],
         };
       }
 
       let result = `🔍 Search results for "${query}" (${type}):\n\n`;
-      results.forEach((item, index) => {
-        result += `${index + 1}. 📚 ${item.title}\n`;
-        result += `   👤 Author: ${item.author}\n`;
-        result += `   🎭 Narrator: ${item.narrator}\n`;
-        result += `   📖 Genre: ${item.genre}\n\n`;
+      
+      realBooks.forEach((book, index) => {
+        result += `${index + 1}. 📚 "${book.title}"\n`;
+        result += `   👤 Author: ${book.author}\n`;
+        result += `   🎭 Narrator: ${book.narrator}\n`;
+        result += `   📖 Genre: ${book.genre}\n`;
+        result += `   📅 Year: ${book.year}\n`;
+        result += `   🌍 Language: ${book.language}\n`;
+        result += `   📄 Chapters: ${book.chapters}\n`;
+        if (book.duration > 0) {
+          result += `   ⏱️ Duration: ${Math.floor(book.duration / 3600)}h ${Math.floor((book.duration % 3600) / 60)}m\n`;
+        }
+        result += `   🔗 Source: ${book.source}\n`;
+        result += `   🌐 URL: ${book.url}\n`;
+        if (book.cover) {
+          result += `   🖼️ Cover: ${book.cover}\n`;
+        }
+        result += `   📝 ${book.description.substring(0, 150)}${book.description.length > 150 ? '...' : ''}\n\n`;
       });
+
+      result += `💡 Use "play_audiobook" with the title to start listening!`;
 
       return {
         content: [
