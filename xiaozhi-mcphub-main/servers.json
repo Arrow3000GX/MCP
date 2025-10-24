@@ -74718,5 +74718,259 @@
     "prompts": [],
     "resources": [],
     "is_official": true
+  },
+  "audiobook-player": {
+    "name": "audiobook-player",
+    "display_name": "Audiobook Player",
+    "description": "Comprehensive audiobook player with search, playback control, chapter navigation, bookmarking, and reading list management using real audiobook sources from LibriVox, Internet Archive, and Open Library.",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/ybro2011/WRO.git"
+    },
+    "homepage": "https://github.com/ybro2011/WRO",
+    "author": {
+      "name": "ybro2011"
+    },
+    "license": "MIT",
+    "categories": [
+      "Media",
+      "Entertainment",
+      "Education"
+    ],
+    "tags": [
+      "audiobooks",
+      "books",
+      "librivox",
+      "internet-archive",
+      "open-library",
+      "media-player",
+      "education",
+      "literature"
+    ],
+    "examples": [
+      {
+        "title": "Search and Play Audiobook",
+        "description": "Search for and play an audiobook by title or author",
+        "prompt": "play_audiobook with query 'Pride and Prejudice' author 'Jane Austen'"
+      },
+      {
+        "title": "Search Audiobooks",
+        "description": "Search for audiobooks by genre or keywords",
+        "prompt": "search_audiobooks with query 'science fiction' type 'genre' limit 5"
+      },
+      {
+        "title": "Control Playback",
+        "description": "Control audiobook playback (play, pause, next chapter)",
+        "prompt": "control_playback with action 'pause'"
+      },
+      {
+        "title": "Add Bookmark",
+        "description": "Add a bookmark to the current audiobook",
+        "prompt": "add_bookmark with name 'Important Scene' position 3600"
+      },
+      {
+        "title": "Get Current Book Info",
+        "description": "Get information about the currently playing audiobook",
+        "prompt": "get_current_book"
+      }
+    ],
+    "installations": {
+      "local": {
+        "type": "local",
+        "command": "node",
+        "args": [
+          "audiobook-mcp-server.js"
+        ],
+        "workingDirectory": "/Users/yliu3y/Desktop/WRO/xiaozhi-mcphub-main",
+        "env": {}
+      }
+    },
+    "arguments": {},
+    "name": "audiobook-player",
+    "description": "Comprehensive audiobook player with search, playback control, chapter navigation, bookmarking, and reading list management.",
+    "categories": [
+      "Media",
+      "Entertainment",
+      "Education"
+    ],
+    "tools": [
+      {
+        "name": "play_audiobook",
+        "description": "Search for and play an audiobook by title, author, or genre.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Audiobook title, author, or search query (e.g., '1984', 'George Orwell', 'sci-fi')"
+            },
+            "author": {
+              "type": "string",
+              "description": "Optional: Specific author name"
+            },
+            "genre": {
+              "type": "string",
+              "description": "Optional: Audiobook genre (e.g., 'fiction', 'fantasy', 'biography')"
+            }
+          },
+          "required": ["query"]
+        }
+      },
+      {
+        "name": "play_chapter",
+        "description": "Play a specific chapter of the current or a specified audiobook.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "chapterNumber": {
+              "type": "number",
+              "description": "The number of the chapter to play"
+            },
+            "bookTitle": {
+              "type": "string",
+              "description": "Optional: Title of the audiobook if not the current one"
+            }
+          },
+          "required": ["chapterNumber"]
+        }
+      },
+      {
+        "name": "control_playback",
+        "description": "Control audiobook playback (play, pause, stop, next chapter, previous chapter, seek, set speed).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": ["play", "pause", "stop", "next", "previous", "seek", "speed"],
+              "description": "Control action to perform"
+            },
+            "value": {
+              "type": "number",
+              "description": "For seek: position in seconds. For speed: playback speed (e.g., 1.0 for normal, 1.5 for 1.5x)"
+            }
+          },
+          "required": ["action"]
+        }
+      },
+      {
+        "name": "search_audiobooks",
+        "description": "Search for audiobooks by title, author, genre, or keywords.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search query for audiobooks"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["title", "author", "genre", "all"],
+              "description": "Type of search to perform",
+              "default": "all"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of results to return",
+              "default": 10
+            }
+          },
+          "required": ["query"]
+        }
+      },
+      {
+        "name": "get_current_book",
+        "description": "Get information about the currently playing audiobook and its status.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "add_bookmark",
+        "description": "Add a bookmark to the current audiobook at a specific position or the current playback position.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Optional: Name for the bookmark"
+            },
+            "positionSeconds": {
+              "type": "number",
+              "description": "Optional: Specific position in seconds to add the bookmark"
+            },
+            "chapterNumber": {
+              "type": "number",
+              "description": "Optional: Chapter number for the bookmark"
+            }
+          }
+        }
+      },
+      {
+        "name": "list_bookmarks",
+        "description": "List all bookmarks for the current or a specified audiobook.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "bookTitle": {
+              "type": "string",
+              "description": "Optional: Title of the audiobook to list bookmarks for"
+            }
+          }
+        }
+      },
+      {
+        "name": "set_reading_speed",
+        "description": "Set the playback speed for the current audiobook.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "speed": {
+              "type": "number",
+              "description": "Playback speed (e.g., 1.0 for normal, 1.5 for 1.5x, 0.75 for 0.75x)",
+              "minimum": 0.5,
+              "maximum": 3.0
+            }
+          },
+          "required": ["speed"]
+        }
+      },
+      {
+        "name": "get_reading_progress",
+        "description": "Get detailed reading progress and statistics for the current or a specified audiobook.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "bookTitle": {
+              "type": "string",
+              "description": "Optional: Title of the audiobook to get progress for"
+            }
+          }
+        }
+      },
+      {
+        "name": "create_reading_list",
+        "description": "Create a new reading list (playlist) of audiobooks.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the new reading list"
+            },
+            "audiobooks": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Array of audiobook titles to include in the reading list"
+            }
+          },
+          "required": ["name", "audiobooks"]
+        }
+      }
+    ],
+    "prompts": [],
+    "resources": [],
+    "is_official": false
   }
 }
