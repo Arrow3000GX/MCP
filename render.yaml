@@ -2,6 +2,6 @@ services:
   - type: web
     name: mcp
     env: node
-    rootDir: server
+    rootDir: xiaozhi-mcphub-main
     buildCommand: npm install
     startCommand: npm start
