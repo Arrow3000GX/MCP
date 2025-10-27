@@ -1,5 +1,24 @@
 # Railway Deployment Guide
 
+## ⚠️ CRITICAL: Fix "Could not determine how to build the app" Error
+
+**The issue:** Railway is deploying from the root `WRO` directory, but your app is in `xiaozhi-mcphub-main` subdirectory.
+
+### 🔧 **Quick Fix - Configure Root Directory:**
+
+**In Railway Dashboard:**
+1. Go to your **service** → **Settings**
+2. Scroll to **"Source"** section
+3. Set **"Root Directory"** to: `xiaozhi-mcphub-main`
+4. **Save** and redeploy
+
+**OR via CLI:**
+```bash
+railway variables set --from-file . --dest ./xiaozhi-mcphub-main
+```
+
+---
+
 ## Quick Fix for Nixpacks Error
 
 The deployment failed because Railway couldn't automatically detect the build process. Here's how to fix it:
